@@ -30,6 +30,7 @@ class CartPoleNetwork(nn.Module):
         return self.q_net(features)
 
 
+
 class MountainCarNetwork(nn.Module):
 
     state_dim = (2,)
@@ -76,6 +77,50 @@ class BreakoutNetwork(nn.Module):
         x = self.q_net(features)
         x = x.view(x.size(0), -1)
         return self.fc(x)
+
+
+class AtlantisNetwork(nn.Module):
+    pass
+
+
+class AtlantisDuelingNetwork(nn.Module):
+    state_dim = (3, 160, 210)
+    action_dim = 4
+
+    def __init__(self) -> None:
+        super(AtlantisDuelingNetwork, self).__init__()
+        self.conv_net = nn.Sequential(
+            nn.Conv2d(3, 32, 8, 4),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 4, 2),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, 3, 1),
+            nn.ReLU(),
+        )
+
+        self.advantage_network = nn.Sequential(
+            nn.Linear(22528, 512),
+            nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, self.action_dim)
+        )
+
+        self.state_value_network = nn.Sequential(
+            nn.Linear(22528, 512),
+            nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, 1)
+        )
+
+    def forward(self, features):
+        conv_features = self.conv_net(features)
+        conv_features = conv_features.view(conv_features.size(0), -1)
+        advantages = self.advantage_network(conv_features)
+        state_value = self.state_value_network(conv_features)
+        return state_value + advantages - advantages.mean(dim=-1, keepdim=True)
+
 
 
 def gen_q_and_target_network(device, net_class):
@@ -276,10 +321,27 @@ def train_breakout_dqn():
     )
 
 
+def train_atlantis_dueling_dqn():
+    dqn_param = DQNParam(
+        replay_buffer_size=1000
+    )
+    training_param = TrainingParam(
+        name='atlantis-dqn',
+    )
+    env = ImageToPyTorch(gym.make('Atlantis-v0'), training_param.device,)
+    train_dqn(
+        env,
+        AtlantisDuelingNetwork,
+        dqn_param,
+        training_param,
+    )
+
+
 def main():
     torch.cuda.empty_cache()
     # train_mountain_car_dqn()
-    train_cartpole_dqn()
+    train_atlantis_dueling_dqn()
+    # train_cartpole_dqn()
     # train(gym.make('CartPole-v0'), 3000, device)
     # test(gym.make('CartPole-v0'), torch.device('cpu'))
 
