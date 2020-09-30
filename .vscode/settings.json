@@ -1,6 +1,0 @@
-{
-    "python.pythonPath": "/home/kai/miniconda3/envs/halite/bin/python",
-    "python.analysis.extraPaths": [
-        "/home/kai/Documents/kaggle/learn/reinforcement_learning"
-    ]
-}

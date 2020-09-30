@@ -1,3 +1,6 @@
 __py__cache__/
 logs/
 models/
+.vscode
+__pycache__
+runs
