@@ -7,9 +7,6 @@ import torch.nn.functional as F
 import torch
 
 class DQNAgent:
-    """
-    env: OpenAI Gym env object
-    """
 
     def __init__(
         self,
@@ -21,25 +18,28 @@ class DQNAgent:
         state_dim,
         action_dim,
     ):
+        """
+        env: OpenAI Gym env object
+        """
         self.env = env
         self.q_network = q_network
         self.target_network = target_network
-        '''
-        self.replay_buffer = ReplayBuffer(
-            dqn_param.replay_buffer_size,
-            training_param.batch_size,
-            state_dim,
-            action_dim,
-            training_param.device,
-        )
-        '''
-        self.replay_buffer = PrioritizedReplayBuffer(
-            dqn_param.replay_buffer_size,
-            training_param.batch_size,
-            state_dim,
-            action_dim,
-            training_param.device,
-        )
+        if training_param.use_per:
+            self.replay_buffer = PrioritizedReplayBuffer(
+                dqn_param.replay_buffer_size,
+                training_param.batch_size,
+                state_dim,
+                action_dim,
+                training_param.device,
+            )
+        else:
+            self.replay_buffer = ReplayBuffer(
+                dqn_param.replay_buffer_size,
+                training_param.batch_size,
+                state_dim,
+                action_dim,
+                training_param.device,
+            )
         self.gamma = dqn_param.gamma
         self.batch_size = training_param.batch_size
         self.target_update_rate = dqn_param.target_update_rate

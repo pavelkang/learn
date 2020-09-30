@@ -8,119 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from agent import DQNAgent
 from param_def import DQNParam, TrainingParam
-
-
-class CartPoleNetwork(nn.Module):
-
-    state_dim = (4,)
-    action_dim = 2
-
-    def __init__(self):
-        super(CartPoleNetwork, self).__init__()
-
-        self.q_net = nn.Sequential(
-            nn.Linear(self.state_dim[0], 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, self.action_dim),
-        )
-
-    def forward(self, features):
-        return self.q_net(features)
-
-
-
-class MountainCarNetwork(nn.Module):
-
-    state_dim = (2,)
-    action_dim = 3
-
-    def __init__(self):
-        super(MountainCarNetwork, self).__init__()
-
-        self.q_net = nn.Sequential(
-            nn.Linear(self.state_dim[0], 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, self.action_dim),
-        )
-
-    def forward(self, features):
-        return self.q_net(features)
-
-
-class BreakoutNetwork(nn.Module):
-
-    state_dim = (3, 160, 210)
-    action_dim = 4
-
-    def __init__(self):
-        super(BreakoutNetwork, self).__init__()
-        self.q_net = nn.Sequential(
-            nn.Conv2d(3, 32, 8, 4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 4, 2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, 1),
-            nn.ReLU(),
-        )
-
-        self.fc = nn.Sequential(
-            nn.Linear(22528, 512),
-            nn.ReLU(),
-            nn.Linear(512, self.action_dim)
-        )
-
-    def forward(self, features):
-        x = self.q_net(features)
-        x = x.view(x.size(0), -1)
-        return self.fc(x)
-
-
-class AtlantisNetwork(nn.Module):
-    pass
-
-
-class AtlantisDuelingNetwork(nn.Module):
-    state_dim = (3, 160, 210)
-    action_dim = 4
-
-    def __init__(self) -> None:
-        super(AtlantisDuelingNetwork, self).__init__()
-        self.conv_net = nn.Sequential(
-            nn.Conv2d(3, 32, 8, 4),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, 4, 2),
-            nn.ReLU(),
-            nn.Conv2d(64, 64, 3, 1),
-            nn.ReLU(),
-        )
-
-        self.advantage_network = nn.Sequential(
-            nn.Linear(22528, 512),
-            nn.ReLU(),
-            nn.Linear(512, 128),
-            nn.ReLU(),
-            nn.Linear(128, self.action_dim)
-        )
-
-        self.state_value_network = nn.Sequential(
-            nn.Linear(22528, 512),
-            nn.ReLU(),
-            nn.Linear(512, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1)
-        )
-
-    def forward(self, features):
-        conv_features = self.conv_net(features)
-        conv_features = conv_features.view(conv_features.size(0), -1)
-        advantages = self.advantage_network(conv_features)
-        state_value = self.state_value_network(conv_features)
-        return state_value + advantages - advantages.mean(dim=-1, keepdim=True)
-
+from network import CartPoleNetwork, MountainCarNetwork, BreakoutNetwork, AtlantisDuelingNetwork
 
 
 def gen_q_and_target_network(device, net_class):
@@ -208,10 +96,10 @@ def train_dqn(
 def test(
     env,
     device,
+    q_net = CartPoleNetwork(),
     model_path='cartpole-models/1.pt',
     n_episodes=100,
 ):
-    q_net = CartPoleNetwork()
     q_net.load_state_dict(torch.load(model_path))
     q_net.eval()
     agent = DQNAgent(
@@ -240,6 +128,13 @@ def test(
     env.close()
     print('rewards:', rewards)
     return rewards
+
+
+def test_render(
+    env,
+    model_path,
+):
+    pass
 
 
 class ImageToPyTorch(gym.ObservationWrapper):
@@ -290,6 +185,7 @@ def train_cartpole_dqn():
         training_param,
     )
 
+
 def train_mountain_car_dqn():
     dqn_param = DQNParam()
     training_param = TrainingParam(
@@ -307,7 +203,7 @@ def train_mountain_car_dqn():
 
 def train_breakout_dqn():
     dqn_param = DQNParam(
-        replay_buffer_size=1000
+        replay_buffer_size=5000
     )
     training_param = TrainingParam(
         name='breakout-dqn',
@@ -338,12 +234,7 @@ def train_atlantis_dueling_dqn():
 
 
 def main():
-    torch.cuda.empty_cache()
-    # train_mountain_car_dqn()
-    train_atlantis_dueling_dqn()
-    # train_cartpole_dqn()
-    # train(gym.make('CartPole-v0'), 3000, device)
-    # test(gym.make('CartPole-v0'), torch.device('cpu'))
+    train_breakout_dqn()
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ class TrainingParam:
     name: str
     n_episodes: int = 1000
     batch_size: int = 32
+    use_per: bool = True
     device: torch.device = torch.device(
         'cuda:0') if torch.cuda.is_available() else torch.device('cpu')
     log_every: int = 10
